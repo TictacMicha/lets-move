@@ -83,18 +83,46 @@ lets-move/
 
 ---
 
-## 6. Implementasi Fitur (Contoh: Sprint Button Liquid Glass)
+## 6. Implementasi Fitur
 
-**File**: `src/client/UI/SprintButton.client.luau`
-
-**Fitur UI Liquid Glass**:
-- **Bentuk**: Persegi (100×100) dengan rounded corners (UICorner radius 12)
-- **Style**: Liquid glass dengan gradien putih-biru muda (UIGradient), transparency 70%
-- **Animasi**: Pulse effect, press feedback shrink, drag dengan smooth tracking via UserInputService
+### Sprint Button (`src/client/UI/SprintButton.client.luau`)
+- **Style**: Liquid glass, persegi (100×100), UICorner radius 12, UIGradient putih-biru, transparency 70%
+- **Animasi**: Pulse effect, press feedback shrink, drag smooth via `UserInputService.InputChanged`
 - **Interaksi**: Toggle sprint speed 16↔32, warna berubah dari putih ke orange saat sprint aktif
-- **Struktur**: ScreenGui → PlayerGui (wrapper wajib untuk UI di Roblox)
+- **Struktur**: ScreenGui → TextButton
 
-**Catatan Dev**:
-- LocalScript `.client.luau` vs ModuleScript `.luau` (Rojo convention)
-- TweenService untuk animasi smooth
-- Proper cleanup connections saat dragging berakhir
+### Graphics Quality Popup (`src/client/UI/GraphicsQuality.client.luau`)
+- **Style**: Liquid glass Apple — UIGradient + UIStroke + transparency berlapis pada card dan tombol
+- **Pilihan**: LOW / MEDIUM / HIGH dengan icon, label, deskripsi
+- **Animasi**: Spring bounce in/out via TweenService, selected state highlight biru
+- **Responsive**: UIScale auto-adjust berdasarkan ViewportSize, clamp 55%–100%
+- **Struktur**: ScreenGui → overlay Frame → card Frame → tombol
+
+**`applyGraphicsQuality` — cara yang benar:**
+- `settings().Rendering.QualityLevel` dan `UserGameSettings.SavedQualityLevel` **tidak bisa diubah dari LocalScript** — diproteksi engine Roblox
+- Solusi: ubah properti secara manual:
+  - `Lighting.GlobalShadows` — matikan/nyalakan bayangan
+  - `Terrain.Decoration` — matikan/nyalakan rumput 3D
+  - `Terrain.WaterWaveSize` / `Terrain.WaterReflectance` — kualitas air
+
+### Box Pickup & Carry System (`src/client/UI/PickupSystem.client.luau`)
+- **Deteksi**: Raycast dari crosshair tengah layar (max 15 studs) menuju part bernama `box`
+- **UI Prompt**: Liquid glass prompt "E — Pick Up" dan "E — Drop" dengan anim in/out
+- **Fisika Carry**:
+  - `AlignPosition` + `AlignOrientation` mode `OneAttachment` untuk stabilitas
+  - `NoCollisionConstraint` dengan karakter saat digendong agar tidak terjadi fling/terbang
+  - Delay & inersia berat (`Responsiveness = 12`, `MaxVelocity = 22`)
+  - Dynamic Sagging: box melorot kebawah seiring kecepatan berjalan
+  - Slowdown: `WalkSpeed` berkurang 30% saat menggendong
+  - Non-bouncing: `CustomPhysicalProperties` (`Elasticity = 0`, `Density = 3.5`, `Friction = 0.9`)
+
+---
+
+## 7. Catatan Dev Penting (Roblox Luau)
+
+- Rojo convention: `.client.luau` = LocalScript, `.server.luau` = Script, `.luau` = ModuleScript
+- Semua UI wajib dibungkus `ScreenGui` dulu, baru parent ke `PlayerGui`
+- `button.Draggable` tidak ada — harus custom drag logic
+- Drag gunakan `UserInputService.InputChanged` bukan `button.InputChanged` agar smooth saat kursor keluar frame
+- Jangan pakai `rojo build` atau buat `.rbxlx` — pakai live sync `rojo serve` via plugin Roblox Studio
+- Port default `34872`, alternatif `34873` jika bentrok
